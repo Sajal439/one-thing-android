@@ -1,97 +1,93 @@
-This is a new [**React Native**](https://reactnative.dev) project, bootstrapped using [`@react-native-community/cli`](https://github.com/react-native-community/cli).
+# ONE THING
 
-# Getting Started
+**Focus on one task. Finish it. Repeat.**
 
-> **Note**: Make sure you have completed the [Set Up Your Environment](https://reactnative.dev/docs/set-up-your-environment) guide before proceeding.
+ONE THING is a minimalist Android app designed to fight fake productivity.
+No endless to-do lists. No priorities. No noise.
 
-## Step 1: Start Metro
+You choose **one task**.
+You either finish it — or you don’t.
 
-First, you will need to run **Metro**, the JavaScript build tool for React Native.
+---
 
-To start the Metro dev server, run the following command from the root of your React Native project:
+## Why this app exists
 
-```sh
-# Using npm
-npm start
+Most to-do apps help you feel busy.
+They don’t help you finish anything.
 
-# OR using Yarn
-yarn start
-```
+ONE THING is built on a simple rule:
 
-## Step 2: Build and run your app
+> You can only have one active task at a time.
 
-With Metro running, open a new terminal window/pane from the root of your React Native project, and use one of the following commands to build and run your Android or iOS app:
+That constraint is the feature.
 
-### Android
+---
 
-```sh
-# Using npm
-npm run android
+## How it works
 
-# OR using Yarn
-yarn android
-```
+- Add **one** task
+- The app blocks you from adding another
+- Finish it → streak increases
+- Miss a day → streak resets
+- Gentle daily reminder, no spam
+- Dark mode supported
 
-### iOS
+That’s it.
 
-For iOS, remember to install CocoaPods dependencies (this only needs to be run on first clone or after updating native deps).
+---
 
-The first time you create a new project, run the Ruby bundler to install CocoaPods itself:
+## Who this is for
 
-```sh
-bundle install
-```
+- People who procrastinate by planning
+- People tired of “productivity” apps
+- People who want accountability, not features
 
-Then, and every time you update your native dependencies, run:
+If you like complex systems and endless customization, this app will annoy you.
+That’s intentional.
 
-```sh
-bundle exec pod install
-```
+---
 
-For more information, please visit [CocoaPods Getting Started guide](https://guides.cocoapods.org/using/getting-started.html).
+## Screenshots
 
-```sh
-# Using npm
-npm run ios
+_Add screenshots here_
 
-# OR using Yarn
-yarn ios
-```
+---
 
-If everything is set up correctly, you should see your new app running in the Android Emulator, iOS Simulator, or your connected device.
+## Download (Android)
 
-This is one way to run your app — you can also build it directly from Android Studio or Xcode.
+👉 Download the latest APK from **Releases**  
+https://github.com/<your-username>/<repo-name>/releases
 
-## Step 3: Modify your app
+### Installation steps
+1. Download the APK on your phone
+2. Open it
+3. Allow “Install unknown apps” if prompted
+4. Install and open ONE THING
 
-Now that you have successfully run the app, let's make changes!
+---
 
-Open `App.tsx` in your text editor of choice and make some changes. When you save, your app will automatically update and reflect these changes — this is powered by [Fast Refresh](https://reactnative.dev/docs/fast-refresh).
+## Privacy
 
-When you want to forcefully reload, for example to reset the state of your app, you can perform a full reload:
+- No login
+- No accounts
+- No cloud sync
+- All data stays on your device
 
-- **Android**: Press the <kbd>R</kbd> key twice or select **"Reload"** from the **Dev Menu**, accessed via <kbd>Ctrl</kbd> + <kbd>M</kbd> (Windows/Linux) or <kbd>Cmd ⌘</kbd> + <kbd>M</kbd> (macOS).
-- **iOS**: Press <kbd>R</kbd> in iOS Simulator.
+---
 
-## Congratulations! :tada:
+## Status
 
-You've successfully run and modified your React Native App. :partying_face:
+This is an early release.
+Feedback is welcome, feature bloat is not.
 
-### Now what?
+---
 
-- If you want to add this new React Native code to an existing application, check out the [Integration guide](https://reactnative.dev/docs/integration-with-existing-apps).
-- If you're curious to learn more about React Native, check out the [docs](https://reactnative.dev/docs/getting-started).
+## Philosophy
 
-# Troubleshooting
+ONE THING is intentionally limited.
+The goal is not to manage your life.
+The goal is to finish what matters.
 
-If you're having issues getting the above steps to work, see the [Troubleshooting](https://reactnative.dev/docs/troubleshooting) page.
+---
 
-# Learn More
-
-To learn more about React Native, take a look at the following resources:
-
-- [React Native Website](https://reactnative.dev) - learn more about React Native.
-- [Getting Started](https://reactnative.dev/docs/environment-setup) - an **overview** of React Native and how setup your environment.
-- [Learn the Basics](https://reactnative.dev/docs/getting-started) - a **guided tour** of the React Native **basics**.
-- [Blog](https://reactnative.dev/blog) - read the latest official React Native **Blog** posts.
-- [`@facebook/react-native`](https://github.com/facebook/react-native) - the Open Source; GitHub **repository** for React Native.
+Built with React Native.
