@@ -56,7 +56,7 @@ _Add screenshots here_
 ## Download (Android)
 
 👉 Download the latest APK from **Releases**  
-https://github.com/<your-username>/<repo-name>/releases
+https://github.com/Sajal439/one-thing-android/releases
 
 ### Installation steps
 1. Download the APK on your phone
