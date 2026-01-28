@@ -1,93 +1,100 @@
 # ONE THING
 
-**Focus on one task. Finish it. Repeat.**
+**Stop planning. Finish something.**
 
-ONE THING is a minimalist Android app designed to fight fake productivity.
-No endless to-do lists. No priorities. No noise.
+ONE THING is not a productivity app.
+It’s a constraint.
 
-You choose **one task**.
-You either finish it — or you don’t.
+You are allowed to add **one task**.
+That’s it.
+
+No lists.
+No priorities.
+No hiding.
 
 ---
 
-## Why this app exists
+## Why this exists
 
-Most to-do apps help you feel busy.
-They don’t help you finish anything.
+Most to-do apps help you *feel* productive.
+They help you plan, rearrange, color-code, and postpone.
 
-ONE THING is built on a simple rule:
+ONE THING does the opposite.
 
-> You can only have one active task at a time.
-
-That constraint is the feature.
+It removes your ability to pretend.
 
 ---
 
 ## How it works
 
 - Add **one** task
-- The app blocks you from adding another
+- You cannot add another
 - Finish it → streak increases
 - Miss a day → streak resets
-- Gentle daily reminder, no spam
-- Dark mode supported
+- One quiet reminder per day
 
-That’s it.
-
----
-
-## Who this is for
-
-- People who procrastinate by planning
-- People tired of “productivity” apps
-- People who want accountability, not features
-
-If you like complex systems and endless customization, this app will annoy you.
-That’s intentional.
+Finish the task.
+Or admit you won’t.
 
 ---
 
-## Screenshots
+## This app is NOT for you if
 
-_Add screenshots here_
+- You want complex systems
+- You like managing lists more than doing work
+- You need motivation, quotes, or confetti
+
+This app will frustrate you.
+That’s the point.
+
+---
+
+## This app IS for you if
+
+- You over-plan
+- You procrastinate productively
+- You’re tired of lying to yourself
+
+ONE THING doesn’t motivate you.
+It removes your escape routes.
+
+---
+
+## Features (intentionally limited)
+
+- Single active task
+- Daily streaks (no cheating)
+- Dark mode
+- Local-only data (no accounts, no cloud)
+- One reminder per day, nothing more
 
 ---
 
 ## Download (Android)
 
-👉 Download the latest APK from **Releases**  
-https://github.com/Sajal439/one-thing-android/releases
+👉 Get the latest APK from **Releases**  
+https://github.com/<your-username>/<repo-name>/releases
 
-### Installation steps
-1. Download the APK on your phone
-2. Open it
-3. Allow “Install unknown apps” if prompted
-4. Install and open ONE THING
+### Installation
+1. Download the APK
+2. Open it on your phone
+3. Allow “Install unknown apps”
+4. Install and open
 
 ---
 
 ## Privacy
 
-- No login
-- No accounts
-- No cloud sync
-- All data stays on your device
-
----
-
-## Status
-
-This is an early release.
-Feedback is welcome, feature bloat is not.
+No login.
+No tracking.
+No analytics.
+Everything stays on your device.
 
 ---
 
 ## Philosophy
 
-ONE THING is intentionally limited.
-The goal is not to manage your life.
-The goal is to finish what matters.
+You don’t need better tools.
+You need fewer options.
 
----
-
-Built with React Native.
+ONE THING gives you exactly one.
