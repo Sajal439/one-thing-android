@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { StyleSheet, useColorScheme } from 'react-native';
+import { StyleSheet, useColorScheme, StatusBar } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 // Components
@@ -42,7 +42,8 @@ const App = () => {
   const { task, input, setInput, saveTask, clearTask } = useTask();
   const { streak, incrementStreak } = useStreak();
   const { points, addPoints } = usePoints();
-  const { history, addToHistory, deleteFromHistory, clearHistory } = useHistory();
+  const { history, addToHistory, deleteFromHistory, clearHistory } =
+    useHistory();
   const {
     scaleAnim,
     shakeAnim,
@@ -119,6 +120,11 @@ const App = () => {
     <SafeAreaView
       style={[styles.container, { backgroundColor: theme.background }]}
     >
+      <StatusBar
+        barStyle={scheme === 'dark' ? 'light-content' : 'dark-content'}
+        backgroundColor={theme.background}
+      />
+
       <ConfettiOverlay opacity={confettiAnim} />
 
       <Header
@@ -181,8 +187,8 @@ export default App;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingHorizontal: 24,
-    paddingTop: 40,
+    paddingHorizontal: 20,
+    paddingTop: 20,
     paddingBottom: 24,
   },
 });

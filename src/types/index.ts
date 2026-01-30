@@ -1,23 +1,22 @@
-export type ModalType = 'success' | 'failed';
+import { Theme as ThemeColors } from '../constants/colors';
 
-export interface Theme {
-  background: string;
-  text: string;
-  subText: string;
-  inputBorder: string;
-  primary: string;
-  success: string;
-  danger: string;
-  warning: string;
-  modalBg: string;
-  overlay: string;
-  timerBg: string;
-}
+export type Theme = ThemeColors;
+
+export type ModalType = 'success' | 'failed';
 
 export interface HistoryItem {
   id: string;
   task: string;
   completedAt: string;
-  duration: number | null; // in seconds, null if no timer was used
+  duration: number | null;
   pointsEarned: number;
+}
+
+export interface StatCardProps {
+  theme: Theme;
+  icon: string;
+  value: number | string;
+  label: string;
+  bgColor: string;
+  textColor: string;
 }

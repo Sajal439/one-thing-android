@@ -2,74 +2,127 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Theme } from '../types';
 
-interface Props {
+interface HeaderProps {
   theme: Theme;
   streak: number;
   points: number;
   onHistoryPress: () => void;
 }
 
-export const Header: React.FC<Props> = ({
+export const Header: React.FC<HeaderProps> = ({
   theme,
   streak,
   points,
   onHistoryPress,
-}) => (
-  <>
-    <View style={styles.titleRow}>
-      <View style={styles.placeholder} />
-      <Text style={[styles.title, { color: theme.text }]}>ONE THING</Text>
-      <TouchableOpacity onPress={onHistoryPress} style={styles.historyButton}>
-        <Text style={[styles.historyIcon, { color: theme.text }]}>📋</Text>
-      </TouchableOpacity>
+}) => {
+  return (
+    <View style={styles.container}>
+      <View style={styles.topRow}>
+        <View>
+          <Text style={[styles.greeting, { color: theme.subText }]}>
+            Focus on
+          </Text>
+          <Text style={[styles.title, { color: theme.text }]}>ONE THING</Text>
+        </View>
+        <TouchableOpacity
+          style={[
+            styles.historyButton,
+            { backgroundColor: theme.cardBg, borderColor: theme.border },
+          ]}
+          onPress={onHistoryPress}
+        >
+          <Text style={styles.historyIcon}>📋</Text>
+        </TouchableOpacity>
+      </View>
+
+      <View style={styles.statsRow}>
+        <View style={[styles.statCard, { backgroundColor: theme.streakBg }]}>
+          <Text style={styles.statIcon}>🔥</Text>
+          <View style={styles.statContent}>
+            <Text style={[styles.statValue, { color: theme.streakText }]}>
+              {streak}
+            </Text>
+            <Text style={[styles.statLabel, { color: theme.streakText }]}>
+              day streak
+            </Text>
+          </View>
+        </View>
+
+        <View style={[styles.statCard, { backgroundColor: theme.pointsBg }]}>
+          <Text style={styles.statIcon}>⭐</Text>
+          <View style={styles.statContent}>
+            <Text style={[styles.statValue, { color: theme.pointsText }]}>
+              {points}
+            </Text>
+            <Text style={[styles.statLabel, { color: theme.pointsText }]}>
+              points
+            </Text>
+          </View>
+        </View>
+      </View>
     </View>
-    <View style={styles.statsRow}>
-      <Text style={[styles.streak, { color: theme.subText }]}>
-        🔥 {streak} day streak
-      </Text>
-      <Text style={[styles.points, { color: theme.warning }]}>
-        ⭐ {points} pts
-      </Text>
-    </View>
-  </>
-);
+  );
+};
 
 const styles = StyleSheet.create({
-  titleRow: {
+  container: {
+    marginBottom: 24,
+  },
+  topRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    alignItems: 'flex-start',
+    marginBottom: 20,
   },
-  placeholder: {
-    width: 40,
+  greeting: {
+    fontSize: 14,
+    fontWeight: '500',
+    letterSpacing: 1,
+    textTransform: 'uppercase',
+    marginBottom: 4,
   },
   title: {
-    fontSize: 28,
-    fontWeight: '700',
-    textAlign: 'center',
-    letterSpacing: 1,
+    fontSize: 32,
+    fontWeight: '800',
+    letterSpacing: -1,
   },
   historyButton: {
-    padding: 8,
-    width: 40,
+    width: 48,
+    height: 48,
+    borderRadius: 16,
+    justifyContent: 'center',
     alignItems: 'center',
+    borderWidth: 1,
   },
   historyIcon: {
     fontSize: 22,
   },
   statsRow: {
     flexDirection: 'row',
-    justifyContent: 'center',
+    gap: 12,
+  },
+  statCard: {
+    flex: 1,
+    flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 6,
-    gap: 16,
+    paddingVertical: 16,
+    paddingHorizontal: 16,
+    borderRadius: 16,
+    gap: 12,
   },
-  streak: {
-    fontSize: 14,
-    opacity: 0.6,
+  statIcon: {
+    fontSize: 24,
   },
-  points: {
-    fontSize: 14,
-    fontWeight: '600',
+  statContent: {
+    flex: 1,
+  },
+  statValue: {
+    fontSize: 24,
+    fontWeight: '700',
+  },
+  statLabel: {
+    fontSize: 12,
+    fontWeight: '500',
+    opacity: 0.8,
   },
 });

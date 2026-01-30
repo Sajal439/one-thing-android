@@ -3,9 +3,9 @@ import { View, Text, TextInput, StyleSheet, Animated } from 'react-native';
 import { Theme } from '../types';
 import { formatTime } from '../utils/formatters';
 
-interface Props {
+interface TaskContentProps {
   theme: Theme;
-  task: string;
+  task: string | null;
   input: string;
   onInputChange: (text: string) => void;
   onSubmit: () => void;
@@ -14,116 +14,214 @@ interface Props {
   shakeAnim: Animated.Value;
 }
 
-export const TaskContent: React.FC<Props> = ({
+export const TaskContent: React.FC<TaskContentProps> = ({
   theme,
   task,
   input,
   onInputChange,
-  onSubmit,
+  // onSubmit,
   timerActive,
   remainingTime,
   shakeAnim,
 }) => {
-  const getTimerColor = (): string => {
-    if (remainingTime <= 300) return theme.danger;
-    if (remainingTime <= 600) return theme.warning;
-    return theme.success;
+  const shakeInterpolate = shakeAnim.interpolate({
+    inputRange: [0, 0.25, 0.5, 0.75, 1],
+    outputRange: [0, -10, 10, -10, 0],
+  });
+
+  const getTimerColor = () => {
+    if (remainingTime <= 60) return theme.danger;
+    if (remainingTime <= 300) return theme.warning;
+    return theme.primary;
   };
 
-  return (
-    <Animated.View
-      style={[styles.content, { transform: [{ translateX: shakeAnim }] }]}
-    >
-      {task ? (
-        <>
-          <Text style={[styles.label, { color: theme.subText }]}>
-            This is what you chose
-          </Text>
-          <Text style={[styles.task, { color: theme.text }]}>{task}</Text>
+  const getTimerBgColor = () => {
+    if (remainingTime <= 60) return theme.dangerLight;
+    if (remainingTime <= 300) return theme.warningLight;
+    return theme.primaryLight;
+  };
 
-          {timerActive && (
-            <View
-              style={[
-                styles.timerContainer,
-                { backgroundColor: theme.timerBg },
-              ]}
-            >
-              <Text style={[styles.timerLabel, { color: theme.subText }]}>
-                Time Remaining
-              </Text>
-              <Text style={[styles.timerText, { color: getTimerColor() }]}>
-                {formatTime(remainingTime)}
+  const progress = timerActive ? remainingTime / (remainingTime + 1) : 1;
+
+  if (task) {
+    return (
+      <View style={styles.taskContainer}>
+        {timerActive && (
+          <Animated.View
+            style={[
+              styles.timerCard,
+              {
+                backgroundColor: getTimerBgColor(),
+                transform: [{ translateX: shakeInterpolate }],
+              },
+            ]}
+          >
+            <View style={styles.timerHeader}>
+              <Text style={[styles.timerLabel, { color: getTimerColor() }]}>
+                ⏱ Time Remaining
               </Text>
             </View>
-          )}
-        </>
-      ) : (
-        <>
-          <Text style={[styles.emptyHint, { color: theme.subText }]}>
-            Choose carefully. You only get one.
+            <Text style={[styles.timerValue, { color: getTimerColor() }]}>
+              {formatTime(remainingTime)}
+            </Text>
+            <View
+              style={[styles.progressBar, { backgroundColor: theme.border }]}
+            >
+              <View
+                style={[
+                  styles.progressFill,
+                  {
+                    backgroundColor: getTimerColor(),
+                    width: `${progress * 100}%`,
+                  },
+                ]}
+              />
+            </View>
+          </Animated.View>
+        )}
+
+        <View style={[styles.taskCard, { backgroundColor: theme.cardBg }]}>
+          <Text style={[styles.taskLabel, { color: theme.subText }]}>
+            YOUR FOCUS
           </Text>
-          <TextInput
-            placeholder="What are you avoiding?"
-            placeholderTextColor={theme.subText}
-            value={input}
-            onChangeText={onInputChange}
-            style={[
-              styles.input,
-              { color: theme.text, borderColor: theme.inputBorder },
-            ]}
-            returnKeyType="done"
-            onSubmitEditing={onSubmit}
-          />
-        </>
-      )}
-    </Animated.View>
+          <Text style={[styles.taskText, { color: theme.text }]}>{task}</Text>
+        </View>
+
+        <View style={styles.motivationContainer}>
+          <Text style={[styles.motivationText, { color: theme.subText }]}>
+            💪 Stay focused. You've got this!
+          </Text>
+        </View>
+      </View>
+    );
+  }
+
+  return (
+    <View style={styles.inputContainer}>
+      <View style={[styles.inputCard, { backgroundColor: theme.cardBg }]}>
+        <Text style={[styles.inputLabel, { color: theme.subText }]}>
+          What's your one thing for today?
+        </Text>
+        <TextInput
+          style={[
+            styles.textInput,
+            {
+              color: theme.text,
+              backgroundColor: theme.timerBg,
+              borderColor: theme.border,
+            },
+          ]}
+          placeholder="Enter your most important task..."
+          placeholderTextColor={theme.placeholder}
+          value={input}
+          onChangeText={onInputChange}
+          multiline
+          numberOfLines={3}
+          textAlignVertical="top"
+          returnKeyType="done"
+          blurOnSubmit
+        />
+        <Text style={[styles.inputHint, { color: theme.subText }]}>
+          💡 Tip: Choose the task that will make the biggest impact
+        </Text>
+      </View>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
-  content: {
+  taskContainer: {
     flex: 1,
     justifyContent: 'center',
+    gap: 16,
+  },
+  timerCard: {
+    padding: 24,
+    borderRadius: 20,
     alignItems: 'center',
   },
-  label: {
-    fontSize: 14,
-    opacity: 0.5,
-    marginBottom: 6,
-  },
-  task: {
-    fontSize: 30,
-    fontWeight: '600',
-    textAlign: 'center',
-    lineHeight: 38,
-  },
-  emptyHint: {
-    fontSize: 14,
-    opacity: 0.4,
-    marginBottom: 12,
-    textAlign: 'center',
-  },
-  input: {
-    width: '100%',
-    fontSize: 20,
-    borderBottomWidth: 1,
-    paddingVertical: 8,
-    textAlign: 'center',
-  },
-  timerContainer: {
-    marginTop: 24,
-    paddingVertical: 16,
-    paddingHorizontal: 32,
-    borderRadius: 12,
-    alignItems: 'center',
+  timerHeader: {
+    marginBottom: 8,
   },
   timerLabel: {
-    fontSize: 12,
-    marginBottom: 4,
+    fontSize: 14,
+    fontWeight: '600',
+    letterSpacing: 0.5,
   },
-  timerText: {
-    fontSize: 36,
+  timerValue: {
+    fontSize: 56,
     fontWeight: '700',
     fontVariant: ['tabular-nums'],
+    letterSpacing: -2,
+  },
+  progressBar: {
+    width: '100%',
+    height: 6,
+    borderRadius: 3,
+    marginTop: 16,
+    overflow: 'hidden',
+  },
+  progressFill: {
+    height: '100%',
+    borderRadius: 3,
+  },
+  taskCard: {
+    padding: 24,
+    borderRadius: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  taskLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    letterSpacing: 1,
+    marginBottom: 12,
+  },
+  taskText: {
+    fontSize: 24,
+    fontWeight: '600',
+    lineHeight: 32,
+  },
+  motivationContainer: {
+    alignItems: 'center',
+    paddingVertical: 8,
+  },
+  motivationText: {
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  inputContainer: {
+    flex: 1,
+    justifyContent: 'center',
+  },
+  inputCard: {
+    padding: 24,
+    borderRadius: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  inputLabel: {
+    fontSize: 18,
+    fontWeight: '600',
+    marginBottom: 16,
+  },
+  textInput: {
+    fontSize: 16,
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    minHeight: 100,
+    lineHeight: 24,
+  },
+  inputHint: {
+    fontSize: 13,
+    marginTop: 12,
+    textAlign: 'center',
   },
 });

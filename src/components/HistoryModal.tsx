@@ -34,12 +34,12 @@ const formatDate = (isoString: string): string => {
   const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
 
   if (diffDays === 0) {
-    return `Today at ${date.toLocaleTimeString([], {
+    return `Today, ${date.toLocaleTimeString([], {
       hour: '2-digit',
       minute: '2-digit',
     })}`;
   } else if (diffDays === 1) {
-    return `Yesterday at ${date.toLocaleTimeString([], {
+    return `Yesterday, ${date.toLocaleTimeString([], {
       hour: '2-digit',
       minute: '2-digit',
     })}`;
@@ -63,24 +63,20 @@ export const HistoryModal: React.FC<HistoryModalProps> = ({
   onClearAll,
 }) => {
   const handleDelete = (item: HistoryItem) => {
-    Alert.alert(
-      'Delete Task',
-      `Are you sure you want to delete "${item.task}" from history?`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: () => onDelete(item.id),
-        },
-      ],
-    );
+    Alert.alert('Delete Task', `Remove "${item.task}" from history?`, [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete',
+        style: 'destructive',
+        onPress: () => onDelete(item.id),
+      },
+    ]);
   };
 
   const handleClearAll = () => {
     Alert.alert(
-      'Clear History',
-      'Are you sure you want to delete all history? This cannot be undone.',
+      'Clear All History',
+      'This will permanently delete all your history. Continue?',
       [
         { text: 'Cancel', style: 'cancel' },
         {
@@ -92,26 +88,41 @@ export const HistoryModal: React.FC<HistoryModalProps> = ({
     );
   };
 
+  const totalPoints = history.reduce((sum, item) => sum + item.pointsEarned, 0);
+
   const renderItem = ({ item }: { item: HistoryItem }) => (
-    <View style={[styles.historyItem, { backgroundColor: theme.timerBg }]}>
+    <View style={[styles.historyItem, { backgroundColor: theme.cardBg }]}>
       <View style={styles.itemContent}>
-        <Text style={[styles.taskText, { color: theme.text }]} numberOfLines={2}>
+        <Text
+          style={[styles.taskText, { color: theme.text }]}
+          numberOfLines={2}
+        >
           {item.task}
         </Text>
-        <View style={styles.itemDetails}>
-          <Text style={[styles.detailText, { color: theme.subText }]}>
-            {formatDate(item.completedAt)}
-          </Text>
-          <Text style={[styles.detailText, { color: theme.subText }]}>
-            ⏱ {formatDuration(item.duration)}
-          </Text>
-          <Text style={[styles.pointsText, { color: theme.success }]}>
-            +{item.pointsEarned} pts
-          </Text>
+        <View style={styles.itemMeta}>
+          <View style={styles.metaItem}>
+            <Text style={[styles.metaIcon]}>📅</Text>
+            <Text style={[styles.metaText, { color: theme.subText }]}>
+              {formatDate(item.completedAt)}
+            </Text>
+          </View>
+          <View style={styles.metaItem}>
+            <Text style={[styles.metaIcon]}>⏱</Text>
+            <Text style={[styles.metaText, { color: theme.subText }]}>
+              {formatDuration(item.duration)}
+            </Text>
+          </View>
+          <View
+            style={[styles.pointsBadge, { backgroundColor: theme.pointsBg }]}
+          >
+            <Text style={[styles.pointsBadgeText, { color: theme.pointsText }]}>
+              +{item.pointsEarned}
+            </Text>
+          </View>
         </View>
       </View>
       <TouchableOpacity
-        style={styles.deleteButton}
+        style={[styles.deleteButton, { backgroundColor: theme.dangerLight }]}
         onPress={() => handleDelete(item)}
       >
         <Text style={[styles.deleteText, { color: theme.danger }]}>✕</Text>
@@ -121,45 +132,84 @@ export const HistoryModal: React.FC<HistoryModalProps> = ({
 
   const renderEmpty = () => (
     <View style={styles.emptyContainer}>
-      <Text style={[styles.emptyText, { color: theme.subText }]}>
-        No completed tasks yet.
+      <Text style={styles.emptyIcon}>📝</Text>
+      <Text style={[styles.emptyText, { color: theme.text }]}>
+        No history yet
       </Text>
       <Text style={[styles.emptySubText, { color: theme.subText }]}>
-        Complete your first task to see it here!
+        Complete your first task to start tracking your progress!
       </Text>
+    </View>
+  );
+
+  const renderHeader = () => (
+    <View style={styles.statsHeader}>
+      <View style={[styles.statBox, { backgroundColor: theme.primaryLight }]}>
+        <Text style={[styles.statBoxValue, { color: theme.primary }]}>
+          {history.length}
+        </Text>
+        <Text style={[styles.statBoxLabel, { color: theme.primary }]}>
+          Tasks Completed
+        </Text>
+      </View>
+      <View style={[styles.statBox, { backgroundColor: theme.pointsBg }]}>
+        <Text style={[styles.statBoxValue, { color: theme.pointsText }]}>
+          {totalPoints}
+        </Text>
+        <Text style={[styles.statBoxLabel, { color: theme.pointsText }]}>
+          Total Points
+        </Text>
+      </View>
     </View>
   );
 
   return (
     <Modal visible={visible} animationType="slide" transparent>
       <View style={[styles.overlay, { backgroundColor: theme.overlay }]}>
-        <View style={[styles.modalContainer, { backgroundColor: theme.modalBg }]}>
-          <View style={styles.header}>
-            <Text style={[styles.title, { color: theme.text }]}>📋 History</Text>
-            <TouchableOpacity onPress={onClose} style={styles.closeButton}>
+        <View
+          style={[styles.modalContainer, { backgroundColor: theme.background }]}
+        >
+          <View style={[styles.header, { borderBottomColor: theme.border }]}>
+            <View>
+              <Text style={[styles.title, { color: theme.text }]}>History</Text>
+              <Text style={[styles.subtitle, { color: theme.subText }]}>
+                Your completed tasks
+              </Text>
+            </View>
+            <TouchableOpacity
+              style={[styles.closeButton, { backgroundColor: theme.cardBg }]}
+              onPress={onClose}
+            >
               <Text style={[styles.closeText, { color: theme.text }]}>✕</Text>
             </TouchableOpacity>
           </View>
 
-          {history.length > 0 && (
-            <TouchableOpacity
-              style={[styles.clearAllButton, { borderColor: theme.danger }]}
-              onPress={handleClearAll}
-            >
-              <Text style={[styles.clearAllText, { color: theme.danger }]}>
-                Clear All History
-              </Text>
-            </TouchableOpacity>
-          )}
+          {history.length > 0 && renderHeader()}
 
           <FlatList
             data={history}
             keyExtractor={item => item.id}
             renderItem={renderItem}
             ListEmptyComponent={renderEmpty}
-            contentContainerStyle={history.length === 0 ? styles.emptyList : undefined}
+            contentContainerStyle={[
+              styles.listContent,
+              history.length === 0 && styles.emptyList,
+            ]}
             showsVerticalScrollIndicator={false}
           />
+
+          {history.length > 0 && (
+            <View style={[styles.footer, { borderTopColor: theme.border }]}>
+              <TouchableOpacity
+                style={[styles.clearAllButton, { borderColor: theme.danger }]}
+                onPress={handleClearAll}
+              >
+                <Text style={[styles.clearAllText, { color: theme.danger }]}>
+                  Clear All History
+                </Text>
+              </TouchableOpacity>
+            </View>
+          )}
         </View>
       </View>
     </Modal>
@@ -172,47 +222,67 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   modalContainer: {
-    height: '80%',
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 40,
+    height: '85%',
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 16,
+    paddingHorizontal: 24,
+    paddingVertical: 20,
+    borderBottomWidth: 1,
   },
   title: {
     fontSize: 24,
-    fontWeight: 'bold',
+    fontWeight: '700',
+  },
+  subtitle: {
+    fontSize: 14,
+    marginTop: 2,
   },
   closeButton: {
-    padding: 8,
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   closeText: {
-    fontSize: 20,
-    fontWeight: 'bold',
-  },
-  clearAllButton: {
-    borderWidth: 1,
-    borderRadius: 8,
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    alignSelf: 'flex-start',
-    marginBottom: 16,
-  },
-  clearAllText: {
-    fontSize: 14,
+    fontSize: 18,
     fontWeight: '600',
+  },
+  statsHeader: {
+    flexDirection: 'row',
+    paddingHorizontal: 24,
+    paddingVertical: 16,
+    gap: 12,
+  },
+  statBox: {
+    flex: 1,
+    padding: 16,
+    borderRadius: 16,
+    alignItems: 'center',
+  },
+  statBoxValue: {
+    fontSize: 28,
+    fontWeight: '700',
+  },
+  statBoxLabel: {
+    fontSize: 12,
+    fontWeight: '500',
+    marginTop: 4,
+  },
+  listContent: {
+    paddingHorizontal: 24,
+    paddingBottom: 24,
   },
   historyItem: {
     flexDirection: 'row',
     alignItems: 'center',
     padding: 16,
-    borderRadius: 12,
+    borderRadius: 16,
     marginBottom: 12,
   },
   itemContent: {
@@ -221,43 +291,84 @@ const styles = StyleSheet.create({
   taskText: {
     fontSize: 16,
     fontWeight: '600',
-    marginBottom: 8,
+    marginBottom: 10,
+    lineHeight: 22,
   },
-  itemDetails: {
+  itemMeta: {
     flexDirection: 'row',
     flexWrap: 'wrap',
+    alignItems: 'center',
     gap: 12,
   },
-  detailText: {
+  metaItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  metaIcon: {
+    fontSize: 12,
+  },
+  metaText: {
     fontSize: 13,
   },
-  pointsText: {
+  pointsBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  pointsBadgeText: {
     fontSize: 13,
     fontWeight: '600',
   },
   deleteButton: {
-    padding: 8,
-    marginLeft: 8,
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: 12,
   },
   deleteText: {
-    fontSize: 18,
-    fontWeight: 'bold',
+    fontSize: 14,
+    fontWeight: '700',
   },
   emptyContainer: {
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 60,
   },
+  emptyIcon: {
+    fontSize: 48,
+    marginBottom: 16,
+  },
   emptyText: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: '600',
     marginBottom: 8,
   },
   emptySubText: {
     fontSize: 14,
     textAlign: 'center',
+    paddingHorizontal: 32,
+    lineHeight: 20,
   },
   emptyList: {
     flex: 1,
+    justifyContent: 'center',
+  },
+  footer: {
+    paddingHorizontal: 24,
+    paddingVertical: 16,
+    borderTopWidth: 1,
+  },
+  clearAllButton: {
+    borderWidth: 1.5,
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: 'center',
+  },
+  clearAllText: {
+    fontSize: 15,
+    fontWeight: '600',
   },
 });

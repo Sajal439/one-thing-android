@@ -1,8 +1,14 @@
 import React from 'react';
-import { View, Text, Pressable, StyleSheet, Animated } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  Animated,
+} from 'react-native';
 import { Theme } from '../types';
 
-interface Props {
+interface FooterProps {
   theme: Theme;
   hasTask: boolean;
   scaleAnim: Animated.Value;
@@ -10,59 +16,108 @@ interface Props {
   onSave: () => void;
 }
 
-export const Footer: React.FC<Props> = ({
+export const Footer: React.FC<FooterProps> = ({
   theme,
   hasTask,
   scaleAnim,
   onComplete,
   onSave,
-}) => (
-  <View style={styles.footer}>
-    {hasTask ? (
-      <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
-        <Pressable
-          style={({ pressed }) => [
-            styles.doneBtn,
-            { backgroundColor: theme.success },
-            pressed && { opacity: 0.8 },
-          ]}
-          onPress={onComplete}
+}) => {
+  if (hasTask) {
+    return (
+      <View style={styles.container}>
+        <Animated.View
+          style={{ transform: [{ scale: scaleAnim }], width: '100%' }}
         >
-          <Text style={styles.btnText}>✓ I Did it</Text>
-        </Pressable>
-      </Animated.View>
-    ) : (
-      <Pressable
-        style={({ pressed }) => [
-          styles.commitBtn,
-          { backgroundColor: theme.primary },
-          pressed && { opacity: 0.85 },
-        ]}
+          <TouchableOpacity
+            style={[styles.completeButton, { backgroundColor: theme.success }]}
+            onPress={onComplete}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.completeIcon}>✓</Text>
+            <Text style={styles.completeText}>Mark Complete</Text>
+          </TouchableOpacity>
+        </Animated.View>
+        <Text style={[styles.footerHint, { color: theme.subText }]}>
+          Complete your task to earn points and keep your streak!
+        </Text>
+      </View>
+    );
+  }
+
+  return (
+    <View style={styles.container}>
+      <TouchableOpacity
+        style={[styles.saveButton, { backgroundColor: theme.primary }]}
         onPress={onSave}
+        activeOpacity={0.8}
       >
-        <Text style={styles.btnText}>Lock it in</Text>
-      </Pressable>
-    )}
-  </View>
-);
+        <Text style={styles.saveIcon}>→</Text>
+        <Text style={styles.saveText}>Set My Focus</Text>
+      </TouchableOpacity>
+    </View>
+  );
+};
 
 const styles = StyleSheet.create({
-  footer: {
-    width: '100%',
-  },
-  commitBtn: {
-    paddingVertical: 16,
-    borderRadius: 10,
+  container: {
+    paddingTop: 16,
     alignItems: 'center',
+    gap: 12,
   },
-  doneBtn: {
-    paddingVertical: 16,
-    borderRadius: 10,
+  completeButton: {
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 18,
+    paddingHorizontal: 32,
+    borderRadius: 16,
+    gap: 10,
+    shadowColor: '#10B981',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
   },
-  btnText: {
-    color: '#fff',
+  completeIcon: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+  },
+  completeText: {
     fontSize: 18,
-    fontWeight: '600',
+    fontWeight: '700',
+    color: '#FFFFFF',
+    letterSpacing: 0.5,
+  },
+  saveButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 18,
+    paddingHorizontal: 32,
+    borderRadius: 16,
+    width: '100%',
+    gap: 10,
+    shadowColor: '#6366F1',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  saveIcon: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+  },
+  saveText: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#FFFFFF',
+    letterSpacing: 0.5,
+  },
+  footerHint: {
+    fontSize: 13,
+    textAlign: 'center',
   },
 });
