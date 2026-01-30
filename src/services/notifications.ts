@@ -43,7 +43,6 @@ export const scheduleDailyReminder = async (): Promise<void> => {
         smallIcon: 'ic_launcher',
         pressAction: {
           id: 'default',
-          launchActivity: 'default',
         },
       },
     },
@@ -75,7 +74,6 @@ export const scheduleTimerNotification = async (
         smallIcon: 'ic_launcher',
         pressAction: {
           id: 'default',
-          launchActivity: 'default',
         },
       },
     },
@@ -86,8 +84,26 @@ export const scheduleTimerNotification = async (
   );
 };
 
+export const showTimerEndNotification = async (): Promise<void> => {
+  await createChannels();
+
+  await notifee.displayNotification({
+    id: 'timer-ended',
+    title: "⏰ Time's Up!",
+    body: 'Your timer has ended. Did you complete your task?',
+    android: {
+      channelId: CHANNELS.TIMER_ALERT,
+      smallIcon: 'ic_launcher',
+      pressAction: {
+        id: 'default',
+      },
+    },
+  });
+};
+
 export const cancelTimerNotification = async (): Promise<void> => {
   await notifee.cancelTriggerNotification('timer-warning');
+  await notifee.cancelNotification('timer-ended');
 };
 
 export const initNotifications = async (): Promise<void> => {

@@ -5,126 +5,170 @@ import { STORAGE_KEYS } from '../constants/storageKeys';
 import {
   scheduleTimerNotification,
   cancelTimerNotification,
+  showTimerEndNotification,
 } from '../services/notifications';
 
-interface UseTimerReturn {
-  remainingTime: number;
-  timerActive: boolean;
-  startTimer: (minutes: number) => Promise<void>;
-  stopTimer: () => Promise<void>;
+interface TimerState {
+  endTime: number | null;
+  totalDuration: number | null;
 }
 
-export const useTimer = (onTimerEnd?: () => void): UseTimerReturn => {
+export const useTimer = (onTimerEnd?: () => void) => {
   const [remainingTime, setRemainingTime] = useState(0);
   const [timerActive, setTimerActive] = useState(false);
-  const endTimeRef = useRef<number | null>(null);
-  const onTimerEndRef = useRef(onTimerEnd);
+  const [totalDuration, setTotalDuration] = useState<number | null>(null);
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const hasEndedRef = useRef(false);
+  const appStateRef = useRef<AppStateStatus>(AppState.currentState);
 
-  // Keep the callback ref updated
-  useEffect(() => {
-    onTimerEndRef.current = onTimerEnd;
-  }, [onTimerEnd]);
-
-  // Calculate remaining time from stored end time
-  const calculateRemainingTime = useCallback(async (): Promise<number> => {
-    const endTimeStr = await storage.get(STORAGE_KEYS.TIMER_END);
-    if (!endTimeStr) return 0;
-
-    const endTime = parseInt(endTimeStr, 10);
-    endTimeRef.current = endTime;
-    const remaining = Math.floor((endTime - Date.now()) / 1000);
-    return Math.max(0, remaining);
+  const clearTimerInterval = useCallback(() => {
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
   }, []);
 
-  // Load timer on mount
-  useEffect(() => {
-    const loadTimer = async () => {
-      const remaining = await calculateRemainingTime();
+  // Recalculate remaining time from stored endTime
+  const syncTimerWithStorage = useCallback(async () => {
+    const stored = await storage.get(STORAGE_KEYS.TIMER_END);
+    if (stored) {
+      const timerState: TimerState = JSON.parse(stored);
+      const remaining = Math.max(
+        0,
+        Math.floor((timerState.endTime! - Date.now()) / 1000),
+      );
+
       if (remaining > 0) {
         setRemainingTime(remaining);
+        setTotalDuration(timerState.totalDuration);
         setTimerActive(true);
+        hasEndedRef.current = false;
       } else {
-        const endTimeStr = await storage.get(STORAGE_KEYS.TIMER_END);
-        if (endTimeStr) {
-          // Timer expired while app was closed
-          await storage.remove(STORAGE_KEYS.TIMER_END);
-          onTimerEndRef.current?.();
+        // Timer ended while in background
+        await storage.remove(STORAGE_KEYS.TIMER_END);
+        setTimerActive(false);
+        setRemainingTime(0);
+        
+        if (!hasEndedRef.current) {
+          hasEndedRef.current = true;
+          onTimerEnd?.();
         }
       }
-    };
+    }
+  }, [onTimerEnd]);
+
+  const loadTimer = useCallback(async () => {
+    const stored = await storage.get(STORAGE_KEYS.TIMER_END);
+    if (stored) {
+      const timerState: TimerState = JSON.parse(stored);
+      const remaining = Math.max(
+        0,
+        Math.floor((timerState.endTime! - Date.now()) / 1000),
+      );
+
+      if (remaining > 0) {
+        setRemainingTime(remaining);
+        setTotalDuration(timerState.totalDuration);
+        setTimerActive(true);
+        hasEndedRef.current = false;
+      } else {
+        await storage.remove(STORAGE_KEYS.TIMER_END);
+        setTimerActive(false);
+        setRemainingTime(0);
+      }
+    }
+  }, []);
+
+  useEffect(() => {
     loadTimer();
-  }, [calculateRemainingTime]);
+  }, [loadTimer]);
 
   // Handle app state changes (background/foreground)
   useEffect(() => {
-    const handleAppStateChange = async (nextAppState: AppStateStatus) => {
-      if (nextAppState === 'active' && endTimeRef.current) {
-        // App came to foreground - recalculate time
-        const remaining = await calculateRemainingTime();
-
-        if (remaining <= 0) {
-          // Timer expired while in background
-          setTimerActive(false);
-          setRemainingTime(0);
-          await storage.remove(STORAGE_KEYS.TIMER_END);
-          endTimeRef.current = null;
-          onTimerEndRef.current?.();
-        } else {
-          setRemainingTime(remaining);
-          setTimerActive(true);
-        }
+    const handleAppStateChange = (nextAppState: AppStateStatus) => {
+      // App came to foreground from background
+      if (
+        appStateRef.current.match(/inactive|background/) &&
+        nextAppState === 'active'
+      ) {
+        // Recalculate timer based on stored endTime
+        syncTimerWithStorage();
       }
+      appStateRef.current = nextAppState;
     };
 
-    const subscription = AppState.addEventListener(
-      'change',
-      handleAppStateChange,
-    );
+    const subscription = AppState.addEventListener('change', handleAppStateChange);
 
     return () => {
       subscription.remove();
     };
-  }, [calculateRemainingTime]);
+  }, [syncTimerWithStorage]);
 
-  // Countdown effect - uses end time for accuracy
   useEffect(() => {
-    if (!timerActive || !endTimeRef.current) return;
+    if (timerActive && remainingTime > 0) {
+      intervalRef.current = setInterval(() => {
+        setRemainingTime(prev => {
+          const newTime = prev - 1;
+          if (newTime <= 0) {
+            clearTimerInterval();
+            setTimerActive(false);
 
-    const interval = setInterval(() => {
-      const now = Date.now();
-      const remaining = Math.floor((endTimeRef.current! - now) / 1000);
+            if (!hasEndedRef.current) {
+              hasEndedRef.current = true;
+              showTimerEndNotification();
+              onTimerEnd?.();
+              storage.remove(STORAGE_KEYS.TIMER_END);
+            }
+            return 0;
+          }
+          return newTime;
+        });
+      }, 1000);
 
-      if (remaining <= 0) {
-        setTimerActive(false);
-        setRemainingTime(0);
-        storage.remove(STORAGE_KEYS.TIMER_END);
-        endTimeRef.current = null;
-        onTimerEndRef.current?.();
-        clearInterval(interval);
-      } else {
-        setRemainingTime(remaining);
-      }
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, [timerActive]);
+      return clearTimerInterval;
+    }
+  }, [timerActive, clearTimerInterval, onTimerEnd]);
 
   const startTimer = useCallback(async (minutes: number): Promise<void> => {
-    const endTime = Date.now() + minutes * 60 * 1000;
-    await storage.set(STORAGE_KEYS.TIMER_END, endTime.toString());
-    endTimeRef.current = endTime;
-    setRemainingTime(minutes * 60);
-    setTimerActive(true);
+    const durationInSeconds = minutes * 60;
+    const endTime = Date.now() + durationInSeconds * 1000;
+
+    const timerState: TimerState = {
+      endTime,
+      totalDuration: durationInSeconds,
+    };
+
+    await storage.set(STORAGE_KEYS.TIMER_END, JSON.stringify(timerState));
     await scheduleTimerNotification(minutes);
+
+    setRemainingTime(durationInSeconds);
+    setTotalDuration(durationInSeconds);
+    setTimerActive(true);
+    hasEndedRef.current = false;
   }, []);
 
   const stopTimer = useCallback(async (): Promise<void> => {
+    clearTimerInterval();
     await storage.remove(STORAGE_KEYS.TIMER_END);
     await cancelTimerNotification();
-    endTimeRef.current = null;
     setTimerActive(false);
     setRemainingTime(0);
-  }, []);
+    setTotalDuration(null);
+    hasEndedRef.current = false;
+  }, [clearTimerInterval]);
 
-  return { remainingTime, timerActive, startTimer, stopTimer };
+  // Get elapsed time (how long the user worked)
+  const getElapsedTime = useCallback((): number | null => {
+    if (totalDuration === null) return null;
+    return totalDuration - remainingTime;
+  }, [totalDuration, remainingTime]);
+
+  return {
+    remainingTime,
+    timerActive,
+    totalDuration,
+    startTimer,
+    stopTimer,
+    getElapsedTime,
+  };
 };
