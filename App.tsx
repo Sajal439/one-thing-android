@@ -42,8 +42,7 @@ const App = () => {
   const { task, input, setInput, saveTask, clearTask } = useTask();
   const { streak, incrementStreak } = useStreak();
   const { points, addPoints } = usePoints();
-  const { history, addToHistory, deleteFromHistory, clearHistory } =
-    useHistory();
+  const { history, addToHistory, deleteFromHistory, clearHistory } = useHistory();
   const {
     scaleAnim,
     shakeAnim,
@@ -58,7 +57,7 @@ const App = () => {
     playFailAnimation();
   }, [playFailAnimation]);
 
-  const { remainingTime, timerActive, startTimer, stopTimer } =
+  const { remainingTime, timerActive, totalDuration, startTimer, stopTimer, getElapsedTime } =
     useTimer(handleTimerEnd);
 
   useEffect(() => {
@@ -96,10 +95,14 @@ const App = () => {
     setEarnedPoints(earned);
     await addPoints(earned);
 
-    // Calculate duration if timer was used
+    // Calculate duration - use elapsed time from timer or null if no timer
     let duration: number | null = null;
-    if (timerStartTime.current && timerActive) {
+    if (timerStartTime.current) {
+      // If timer was used, calculate elapsed time
       duration = Math.floor((Date.now() - timerStartTime.current) / 1000);
+    } else if (totalDuration !== null) {
+      // Fallback: use getElapsedTime if available
+      duration = getElapsedTime();
     }
 
     // Add to history
@@ -117,9 +120,7 @@ const App = () => {
   };
 
   return (
-    <SafeAreaView
-      style={[styles.container, { backgroundColor: theme.background }]}
-    >
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
       <StatusBar
         barStyle={scheme === 'dark' ? 'light-content' : 'dark-content'}
         backgroundColor={theme.background}
