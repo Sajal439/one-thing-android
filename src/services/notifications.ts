@@ -41,6 +41,10 @@ export const scheduleDailyReminder = async (): Promise<void> => {
       android: {
         channelId: CHANNELS.DAILY_REMINDER,
         smallIcon: 'ic_launcher',
+        pressAction: {
+          id: 'default',
+          launchActivity: 'default',
+        },
       },
     },
     {
@@ -69,6 +73,10 @@ export const scheduleTimerNotification = async (
       android: {
         channelId: CHANNELS.TIMER_ALERT,
         smallIcon: 'ic_launcher',
+        pressAction: {
+          id: 'default',
+          launchActivity: 'default',
+        },
       },
     },
     {
