@@ -13,3 +13,11 @@ export interface Theme {
   overlay: string;
   timerBg: string;
 }
+
+export interface HistoryItem {
+  id: string;
+  task: string;
+  completedAt: string;
+  duration: number | null; // in seconds, null if no timer was used
+  pointsEarned: number;
+}

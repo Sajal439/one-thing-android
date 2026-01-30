@@ -4,4 +4,5 @@ export const STORAGE_KEYS = {
   TASK: 'ONE_TASK',
   POINTS: 'TOTAL_POINTS',
   TIMER_END: 'TIMER_END_TIME',
+  HISTORY: 'TASK_HISTORY',
 } as const;

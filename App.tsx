@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { StyleSheet, useColorScheme } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -9,6 +9,7 @@ import { TaskContent } from './src/components/TaskContent';
 import { Footer } from './src/components/Footer';
 import { TimerPickerModal } from './src/components/TimerPickerModal';
 import { CompletionModal } from './src/components/CompletionModal';
+import { HistoryModal } from './src/components/HistoryModal';
 
 // Hooks
 import { useTask } from './src/hooks/useTask';
@@ -16,6 +17,7 @@ import { useStreak } from './src/hooks/useStreak';
 import { usePoints } from './src/hooks/usePoints';
 import { useTimer } from './src/hooks/useTimer';
 import { useAnimations } from './src/hooks/useAnimation';
+import { useHistory } from './src/hooks/useHistory';
 
 // Utils & Services
 import { initNotifications } from './src/services/notifications';
@@ -28,7 +30,10 @@ const App = () => {
   const [modalType, setModalType] = useState<ModalType>('success');
   const [timerMinutes, setTimerMinutes] = useState('');
   const [showTimerPicker, setShowTimerPicker] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
   const [earnedPoints, setEarnedPoints] = useState(0);
+
+  const timerStartTime = useRef<number | null>(null);
 
   const scheme = useColorScheme();
   const theme = scheme === 'dark' ? colors.dark : colors.light;
@@ -37,6 +42,7 @@ const App = () => {
   const { task, input, setInput, saveTask, clearTask } = useTask();
   const { streak, incrementStreak } = useStreak();
   const { points, addPoints } = usePoints();
+  const { history, addToHistory, deleteFromHistory, clearHistory } = useHistory();
   const {
     scaleAnim,
     shakeAnim,
@@ -68,6 +74,7 @@ const App = () => {
   const handleStartTimer = async () => {
     const minutes = parseInt(timerMinutes, 10);
     if (!isNaN(minutes) && minutes > 0) {
+      timerStartTime.current = Date.now();
       await startTimer(minutes);
     }
     setShowTimerPicker(false);
@@ -75,17 +82,31 @@ const App = () => {
   };
 
   const handleSkipTimer = () => {
+    timerStartTime.current = null;
     setShowTimerPicker(false);
     setTimerMinutes('');
   };
 
   const handleComplete = async () => {
+    const currentTask = task;
     await incrementStreak();
 
     const earned = calculatePoints(streak, timerActive, remainingTime);
     setEarnedPoints(earned);
     await addPoints(earned);
 
+    // Calculate duration if timer was used
+    let duration: number | null = null;
+    if (timerStartTime.current && timerActive) {
+      duration = Math.floor((Date.now() - timerStartTime.current) / 1000);
+    }
+
+    // Add to history
+    if (currentTask) {
+      await addToHistory(currentTask, duration, earned);
+    }
+
+    timerStartTime.current = null;
     await stopTimer();
     await clearTask();
 
@@ -100,7 +121,12 @@ const App = () => {
     >
       <ConfettiOverlay opacity={confettiAnim} />
 
-      <Header theme={theme} streak={streak} points={points} />
+      <Header
+        theme={theme}
+        streak={streak}
+        points={points}
+        onHistoryPress={() => setShowHistory(true)}
+      />
 
       <TaskContent
         theme={theme}
@@ -136,6 +162,15 @@ const App = () => {
         type={modalType}
         pointsEarned={earnedPoints}
         onClose={() => setShowModal(false)}
+      />
+
+      <HistoryModal
+        visible={showHistory}
+        theme={theme}
+        history={history}
+        onClose={() => setShowHistory(false)}
+        onDelete={deleteFromHistory}
+        onClearAll={clearHistory}
       />
     </SafeAreaView>
   );
