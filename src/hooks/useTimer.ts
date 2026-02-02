@@ -12,6 +12,7 @@ export const useTimer = (onTimerEnd?: () => void) => {
   const [isStopwatch, setIsStopwatch] = useState(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const hasCalledOnEnd = useRef(false);
+  const AppStateRef = useRef<AppStateStatus>('active');
 
   const clearTimerInterval = useCallback(() => {
     if (intervalRef.current) {
@@ -29,10 +30,16 @@ export const useTimer = (onTimerEnd?: () => void) => {
     setIsOvertime(false);
     setIsStopwatch(false);
     hasCalledOnEnd.current = false;
-    await AsyncStorage.removeItem(STORAGE_KEYS.TIMER_END);
-    await AsyncStorage.removeItem(STORAGE_KEYS.TIMER_DURATION);
-    await AsyncStorage.removeItem('TIMER_START');
-    await AsyncStorage.removeItem('STOPWATCH_START');
+    try {
+      await Promise.all([
+        AsyncStorage.removeItem(STORAGE_KEYS.TIMER_END),
+        AsyncStorage.removeItem(STORAGE_KEYS.TIMER_DURATION),
+        AsyncStorage.removeItem('TIMER_START'),
+        AsyncStorage.removeItem('STOPWATCH_START'),
+      ]);
+    } catch (error) {
+      console.warn('Error clearing timer storage:', error);
+    }
   }, [clearTimerInterval]);
 
   const startTimer = useCallback(async (minutes: number) => {
@@ -40,12 +47,19 @@ export const useTimer = (onTimerEnd?: () => void) => {
     const startTime = Date.now();
     const endTime = startTime + durationSeconds * 1000;
 
-    await AsyncStorage.setItem(STORAGE_KEYS.TIMER_END, endTime.toString());
-    await AsyncStorage.setItem(
-      STORAGE_KEYS.TIMER_DURATION,
-      durationSeconds.toString(),
-    );
-    await AsyncStorage.setItem('TIMER_START', startTime.toString());
+    try {
+      await Promise.all([
+        AsyncStorage.setItem(STORAGE_KEYS.TIMER_END, endTime.toString()),
+        AsyncStorage.setItem(
+          STORAGE_KEYS.TIMER_DURATION,
+          durationSeconds.toString(),
+        ),
+        AsyncStorage.setItem('TIMER_START', startTime.toString()),
+      ]);
+    } catch (error) {
+      console.warn('Error saving timer:', error);
+      return;
+    }
 
     setTotalDuration(durationSeconds);
     setRemainingTime(durationSeconds);
@@ -58,11 +72,17 @@ export const useTimer = (onTimerEnd?: () => void) => {
 
   const startStopwatch = useCallback(async () => {
     clearTimerInterval();
-    await AsyncStorage.removeItem(STORAGE_KEYS.TIMER_END);
-    await AsyncStorage.removeItem(STORAGE_KEYS.TIMER_DURATION);
-
     const stopwatchStart = Date.now();
-    await AsyncStorage.setItem('STOPWATCH_START', stopwatchStart.toString());
+    try {
+      await Promise.all([
+        AsyncStorage.removeItem(STORAGE_KEYS.TIMER_END),
+        AsyncStorage.removeItem(STORAGE_KEYS.TIMER_DURATION),
+        AsyncStorage.setItem('STOPWATCH_START', stopwatchStart.toString()),
+      ]);
+    } catch (error) {
+      console.warn('Error starting stopwatch:', error);
+      return;
+    }
 
     setTotalDuration(null);
     setRemainingTime(null);
@@ -86,48 +106,52 @@ export const useTimer = (onTimerEnd?: () => void) => {
   }, [totalDuration, remainingTime, isOvertime, overtime, isStopwatch]);
 
   useEffect(() => {
+    let isMounted = true;
     const loadTimer = async () => {
-      const endTimeStr = await AsyncStorage.getItem(STORAGE_KEYS.TIMER_END);
-      const durationStr = await AsyncStorage.getItem(
-        STORAGE_KEYS.TIMER_DURATION,
-      );
-      const stopwatchStartStr = await AsyncStorage.getItem('STOPWATCH_START');
-
-      // Check for stopwatch first
-      if (stopwatchStartStr) {
-        const stopwatchStart = parseInt(stopwatchStartStr, 10);
-        const elapsed = Math.floor((Date.now() - stopwatchStart) / 1000);
-        setOvertime(elapsed);
-        setIsStopwatch(true);
-        setTimerActive(true);
-        setTotalDuration(null);
-        setRemainingTime(null);
-        return;
-      }
-
-      if (endTimeStr && durationStr) {
-        const endTime = parseInt(endTimeStr, 10);
-        const duration = parseInt(durationStr, 10);
-        const now = Date.now();
-        const remaining = Math.floor((endTime - now) / 1000);
-
-        setTotalDuration(duration);
-        setIsStopwatch(false);
-
-        if (remaining > 0) {
-          setRemainingTime(remaining);
+      try {
+        const [endTimeStr, durationStr, stopwatchStartStr] = await Promise.all([
+          AsyncStorage.getItem(STORAGE_KEYS.TIMER_END),
+          AsyncStorage.getItem(STORAGE_KEYS.TIMER_DURATION),
+          AsyncStorage.getItem('STOPWATCH_START'),
+        ]);
+        if (!isMounted) return;
+        if (stopwatchStartStr) {
+          const stopwatchStart = parseInt(stopwatchStartStr, 10);
+          const elapsed = Math.floor((Date.now() - stopwatchStart) / 1000);
+          setOvertime(elapsed);
+          setIsStopwatch(true);
           setTimerActive(true);
-        } else {
-          // Timer has expired, calculate overtime
-          const overtimeSeconds = Math.abs(remaining);
-          setRemainingTime(0);
-          setOvertime(overtimeSeconds);
-          setIsOvertime(true);
-          setTimerActive(true);
+          setTotalDuration(null);
+          setRemainingTime(null);
+          return;
         }
+        if (endTimeStr && durationStr) {
+          const endTime = parseInt(endTimeStr, 10);
+          const duration = parseInt(durationStr, 10);
+          const now = Date.now();
+          const remaining = Math.floor((endTime - now) / 1000);
+
+          setTotalDuration(duration);
+          setIsStopwatch(false);
+
+          if (remaining > 0) {
+            setRemainingTime(remaining);
+            setTimerActive(true);
+          } else {
+            setRemainingTime(0);
+            setOvertime(Math.abs(remaining));
+            setIsOvertime(true);
+            setTimerActive(true);
+          }
+        }
+      } catch (error) {
+        console.warn('Error loading timer from storage:', error);
       }
     };
     loadTimer();
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   useEffect(() => {
@@ -136,58 +160,66 @@ export const useTimer = (onTimerEnd?: () => void) => {
       return;
     }
 
-    // Recalculate based on wall-clock time on app foreground
-    const subscription = AppState.addEventListener(
-      'change',
-      async (state: AppStateStatus) => {
-        if (state === 'active') {
-          // App came to foreground - recalculate elapsed time
-          const endTimeStr = await AsyncStorage.getItem(STORAGE_KEYS.TIMER_END);
-          const durationStr = await AsyncStorage.getItem(
-            STORAGE_KEYS.TIMER_DURATION,
-          );
-          const stopwatchStartStr = await AsyncStorage.getItem('STOPWATCH_START');
+    const subscription = AppState.addEventListener('change', async state => {
+      AppStateRef.current = state;
+
+      if (state === 'active') {
+        try {
+          // PERF: Batch reads
+          const [endTimeStr, durationStr, stopwatchStartStr] =
+            await Promise.all([
+              AsyncStorage.getItem(STORAGE_KEYS.TIMER_END),
+              AsyncStorage.getItem(STORAGE_KEYS.TIMER_DURATION),
+              AsyncStorage.getItem('STOPWATCH_START'),
+            ]);
 
           if (stopwatchStartStr) {
             const stopwatchStart = parseInt(stopwatchStartStr, 10);
             const elapsed = Math.floor((Date.now() - stopwatchStart) / 1000);
             setOvertime(elapsed);
+            setIsStopwatch(true);
           } else if (endTimeStr && durationStr) {
             const endTime = parseInt(endTimeStr, 10);
+            const duration = parseInt(durationStr, 10);
             const now = Date.now();
             const remaining = Math.floor((endTime - now) / 1000);
+
+            setTotalDuration(duration);
 
             if (remaining > 0) {
               setRemainingTime(remaining);
               setIsOvertime(false);
             } else {
-              const overtimeSeconds = Math.abs(remaining);
               setRemainingTime(0);
-              setOvertime(overtimeSeconds);
+              setOvertime(Math.abs(remaining));
               setIsOvertime(true);
             }
           }
+        } catch (error) {
+          console.warn('Error recalculating timer on foreground:', error);
         }
-      },
-    );
+      }
+    });
 
     intervalRef.current = setInterval(() => {
       if (isStopwatch) {
         setOvertime(prev => prev + 1);
       } else if (isOvertime) {
         setOvertime(prev => prev + 1);
-      } else if (remainingTime !== null) {
-        if (remainingTime <= 1) {
-          setRemainingTime(0);
-          setIsOvertime(true);
-          setOvertime(0);
-          if (!hasCalledOnEnd.current && onTimerEnd) {
-            hasCalledOnEnd.current = true;
-            onTimerEnd();
+      } else if (remainingTime !== null && remainingTime > 0) {
+        setRemainingTime(prev => {
+          const newTime = (prev ?? 0) - 1;
+          if (newTime <= 0) {
+            setRemainingTime(0);
+            setIsOvertime(true);
+            setOvertime(0);
+            if (!hasCalledOnEnd.current && onTimerEnd) {
+              hasCalledOnEnd.current = true;
+              onTimerEnd();
+            }
           }
-        } else {
-          setRemainingTime(prev => (prev !== null ? prev - 1 : null));
-        }
+          return newTime;
+        });
       }
     }, 1000);
 
@@ -195,7 +227,14 @@ export const useTimer = (onTimerEnd?: () => void) => {
       clearTimerInterval();
       subscription.remove();
     };
-  }, [timerActive, remainingTime, isOvertime, isStopwatch, onTimerEnd, clearTimerInterval]);
+  }, [
+    timerActive,
+    isStopwatch,
+    isOvertime,
+    remainingTime,
+    onTimerEnd,
+    clearTimerInterval,
+  ]);
 
   return {
     remainingTime,
