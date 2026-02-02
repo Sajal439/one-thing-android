@@ -73,7 +73,7 @@ It removes your escape routes.
 ## Download (Android)
 
 👉 Get the latest APK from **Releases**  
-https://github.com/<your-username>/<repo-name>/releases
+https://github.com/Sajal439/one-thing-android/releases
 
 ### Installation
 1. Download the APK
