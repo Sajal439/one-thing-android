@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { AppState, AppStateStatus } from 'react-native';
 import { STORAGE_KEYS } from '../constants/storageKeys';
 
 export const useTimer = (onTimerEnd?: () => void) => {
@@ -30,17 +31,21 @@ export const useTimer = (onTimerEnd?: () => void) => {
     hasCalledOnEnd.current = false;
     await AsyncStorage.removeItem(STORAGE_KEYS.TIMER_END);
     await AsyncStorage.removeItem(STORAGE_KEYS.TIMER_DURATION);
+    await AsyncStorage.removeItem('TIMER_START');
+    await AsyncStorage.removeItem('STOPWATCH_START');
   }, [clearTimerInterval]);
 
   const startTimer = useCallback(async (minutes: number) => {
     const durationSeconds = minutes * 60;
-    const endTime = Date.now() + durationSeconds * 1000;
+    const startTime = Date.now();
+    const endTime = startTime + durationSeconds * 1000;
 
     await AsyncStorage.setItem(STORAGE_KEYS.TIMER_END, endTime.toString());
     await AsyncStorage.setItem(
       STORAGE_KEYS.TIMER_DURATION,
       durationSeconds.toString(),
     );
+    await AsyncStorage.setItem('TIMER_START', startTime.toString());
 
     setTotalDuration(durationSeconds);
     setRemainingTime(durationSeconds);
@@ -55,6 +60,9 @@ export const useTimer = (onTimerEnd?: () => void) => {
     clearTimerInterval();
     await AsyncStorage.removeItem(STORAGE_KEYS.TIMER_END);
     await AsyncStorage.removeItem(STORAGE_KEYS.TIMER_DURATION);
+
+    const stopwatchStart = Date.now();
+    await AsyncStorage.setItem('STOPWATCH_START', stopwatchStart.toString());
 
     setTotalDuration(null);
     setRemainingTime(null);
@@ -83,6 +91,19 @@ export const useTimer = (onTimerEnd?: () => void) => {
       const durationStr = await AsyncStorage.getItem(
         STORAGE_KEYS.TIMER_DURATION,
       );
+      const stopwatchStartStr = await AsyncStorage.getItem('STOPWATCH_START');
+
+      // Check for stopwatch first
+      if (stopwatchStartStr) {
+        const stopwatchStart = parseInt(stopwatchStartStr, 10);
+        const elapsed = Math.floor((Date.now() - stopwatchStart) / 1000);
+        setOvertime(elapsed);
+        setIsStopwatch(true);
+        setTimerActive(true);
+        setTotalDuration(null);
+        setRemainingTime(null);
+        return;
+      }
 
       if (endTimeStr && durationStr) {
         const endTime = parseInt(endTimeStr, 10);
@@ -115,15 +136,48 @@ export const useTimer = (onTimerEnd?: () => void) => {
       return;
     }
 
+    // Recalculate based on wall-clock time on app foreground
+    const subscription = AppState.addEventListener(
+      'change',
+      async (state: AppStateStatus) => {
+        if (state === 'active') {
+          // App came to foreground - recalculate elapsed time
+          const endTimeStr = await AsyncStorage.getItem(STORAGE_KEYS.TIMER_END);
+          const durationStr = await AsyncStorage.getItem(
+            STORAGE_KEYS.TIMER_DURATION,
+          );
+          const stopwatchStartStr = await AsyncStorage.getItem('STOPWATCH_START');
+
+          if (stopwatchStartStr) {
+            const stopwatchStart = parseInt(stopwatchStartStr, 10);
+            const elapsed = Math.floor((Date.now() - stopwatchStart) / 1000);
+            setOvertime(elapsed);
+          } else if (endTimeStr && durationStr) {
+            const endTime = parseInt(endTimeStr, 10);
+            const now = Date.now();
+            const remaining = Math.floor((endTime - now) / 1000);
+
+            if (remaining > 0) {
+              setRemainingTime(remaining);
+              setIsOvertime(false);
+            } else {
+              const overtimeSeconds = Math.abs(remaining);
+              setRemainingTime(0);
+              setOvertime(overtimeSeconds);
+              setIsOvertime(true);
+            }
+          }
+        }
+      },
+    );
+
     intervalRef.current = setInterval(() => {
       if (isStopwatch) {
         setOvertime(prev => prev + 1);
       } else if (isOvertime) {
-        // Count up overtime
         setOvertime(prev => prev + 1);
       } else if (remainingTime !== null) {
         if (remainingTime <= 1) {
-          // Timer just expired, switch to overtime mode
           setRemainingTime(0);
           setIsOvertime(true);
           setOvertime(0);
@@ -137,7 +191,10 @@ export const useTimer = (onTimerEnd?: () => void) => {
       }
     }, 1000);
 
-    return () => clearTimerInterval();
+    return () => {
+      clearTimerInterval();
+      subscription.remove();
+    };
   }, [timerActive, remainingTime, isOvertime, isStopwatch, onTimerEnd, clearTimerInterval]);
 
   return {
