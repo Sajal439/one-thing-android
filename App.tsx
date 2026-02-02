@@ -65,7 +65,9 @@ const App = () => {
     totalDuration,
     overtime,
     isOvertime,
+    isStopwatch,
     startTimer,
+    startStopwatch,
     stopTimer,
     getElapsedTime,
   } = useTimer(handleTimerEnd);
@@ -91,8 +93,9 @@ const App = () => {
     setTimerMinutes('');
   };
 
-  const handleSkipTimer = () => {
-    timerStartTime.current = null;
+  const handleSkipTimer = async () => {
+    timerStartTime.current = Date.now();
+    await startStopwatch();
     setShowTimerPicker(false);
     setTimerMinutes('');
   };
@@ -101,7 +104,8 @@ const App = () => {
     const currentTask = task;
     await incrementStreak();
 
-    const earned = calculatePoints(streak, timerActive, remainingTime ?? 0);
+    const hadTimer = totalDuration !== null;
+    const earned = calculatePoints(streak, hadTimer, remainingTime ?? 0);
     setEarnedPoints(earned);
     await addPoints(earned);
 
@@ -161,6 +165,7 @@ const App = () => {
         remainingTime={remainingTime}
         overtime={overtime}
         isOvertime={isOvertime}
+        isStopwatch={isStopwatch}
         shakeAnim={shakeAnim}
       />
 

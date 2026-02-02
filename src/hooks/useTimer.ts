@@ -8,6 +8,7 @@ export const useTimer = (onTimerEnd?: () => void) => {
   const [totalDuration, setTotalDuration] = useState<number | null>(null);
   const [overtime, setOvertime] = useState<number>(0);
   const [isOvertime, setIsOvertime] = useState(false);
+  const [isStopwatch, setIsStopwatch] = useState(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const hasCalledOnEnd = useRef(false);
 
@@ -25,6 +26,7 @@ export const useTimer = (onTimerEnd?: () => void) => {
     setTotalDuration(null);
     setOvertime(0);
     setIsOvertime(false);
+    setIsStopwatch(false);
     hasCalledOnEnd.current = false;
     await AsyncStorage.removeItem(STORAGE_KEYS.TIMER_END);
     await AsyncStorage.removeItem(STORAGE_KEYS.TIMER_DURATION);
@@ -45,17 +47,35 @@ export const useTimer = (onTimerEnd?: () => void) => {
     setTimerActive(true);
     setOvertime(0);
     setIsOvertime(false);
+    setIsStopwatch(false);
     hasCalledOnEnd.current = false;
   }, []);
 
+  const startStopwatch = useCallback(async () => {
+    clearTimerInterval();
+    await AsyncStorage.removeItem(STORAGE_KEYS.TIMER_END);
+    await AsyncStorage.removeItem(STORAGE_KEYS.TIMER_DURATION);
+
+    setTotalDuration(null);
+    setRemainingTime(null);
+    setOvertime(0);
+    setIsOvertime(false);
+    setIsStopwatch(true);
+    setTimerActive(true);
+    hasCalledOnEnd.current = false;
+  }, [clearTimerInterval]);
+
   const getElapsedTime = useCallback((): number | null => {
+    if (isStopwatch) {
+      return overtime;
+    }
     if (totalDuration === null) return null;
     if (isOvertime) {
       return totalDuration + overtime;
     }
     if (remainingTime === null) return null;
     return totalDuration - remainingTime;
-  }, [totalDuration, remainingTime, isOvertime, overtime]);
+  }, [totalDuration, remainingTime, isOvertime, overtime, isStopwatch]);
 
   useEffect(() => {
     const loadTimer = async () => {
@@ -71,6 +91,7 @@ export const useTimer = (onTimerEnd?: () => void) => {
         const remaining = Math.floor((endTime - now) / 1000);
 
         setTotalDuration(duration);
+        setIsStopwatch(false);
 
         if (remaining > 0) {
           setRemainingTime(remaining);
@@ -95,7 +116,9 @@ export const useTimer = (onTimerEnd?: () => void) => {
     }
 
     intervalRef.current = setInterval(() => {
-      if (isOvertime) {
+      if (isStopwatch) {
+        setOvertime(prev => prev + 1);
+      } else if (isOvertime) {
         // Count up overtime
         setOvertime(prev => prev + 1);
       } else if (remainingTime !== null) {
@@ -115,7 +138,7 @@ export const useTimer = (onTimerEnd?: () => void) => {
     }, 1000);
 
     return () => clearTimerInterval();
-  }, [timerActive, remainingTime, isOvertime, onTimerEnd, clearTimerInterval]);
+  }, [timerActive, remainingTime, isOvertime, isStopwatch, onTimerEnd, clearTimerInterval]);
 
   return {
     remainingTime,
@@ -123,7 +146,9 @@ export const useTimer = (onTimerEnd?: () => void) => {
     totalDuration,
     overtime,
     isOvertime,
+    isStopwatch,
     startTimer,
+    startStopwatch,
     stopTimer,
     getElapsedTime,
   };
