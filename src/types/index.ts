@@ -1,8 +1,8 @@
-import { Theme as ThemeColors } from '../constants/colors';
+import type { Theme } from '../constants/colors';
 
-export type Theme = ThemeColors;
+export type { Theme };
 
-export type ModalType = 'success' | 'failed';
+export type ModalType = 'success' | 'failed' | 'overtime';
 
 export interface HistoryItem {
   id: string;

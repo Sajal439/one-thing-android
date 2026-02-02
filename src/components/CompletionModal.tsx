@@ -7,6 +7,7 @@ interface CompletionModalProps {
   theme: Theme;
   type: ModalType;
   pointsEarned: number;
+  overtime: number;
   onClose: () => void;
 }
 
@@ -15,6 +16,7 @@ export const CompletionModal: React.FC<CompletionModalProps> = ({
   theme,
   type,
   pointsEarned,
+  overtime,
   onClose,
 }) => {
   const isSuccess = type === 'success';
@@ -43,9 +45,11 @@ export const CompletionModal: React.FC<CompletionModalProps> = ({
           </Text>
 
           <Text style={[styles.message, { color: theme.subText }]}>
-            {isSuccess
-              ? 'You completed your focus task. Keep building that momentum!'
-              : "Don't worry, every attempt builds discipline. Try again!"}
+            {type === 'overtime'
+              ? `You went over by ${Math.floor(overtime / 60)}:${(overtime % 60).toString().padStart(2, '0')}, but you finished! Great perseverance!`
+              : isSuccess
+                ? 'You completed your focus task. Keep building that momentum!'
+                : "Don't worry, every attempt builds discipline. Try again!"}
           </Text>
 
           {isSuccess && pointsEarned > 0 && (

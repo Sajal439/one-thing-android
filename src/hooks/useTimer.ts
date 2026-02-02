@@ -1,25 +1,15 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { AppState, AppStateStatus } from 'react-native';
-import { storage } from '../utils/storage';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { STORAGE_KEYS } from '../constants/storageKeys';
-import {
-  scheduleTimerNotification,
-  cancelTimerNotification,
-  showTimerEndNotification,
-} from '../services/notifications';
-
-interface TimerState {
-  endTime: number | null;
-  totalDuration: number | null;
-}
 
 export const useTimer = (onTimerEnd?: () => void) => {
-  const [remainingTime, setRemainingTime] = useState(0);
+  const [remainingTime, setRemainingTime] = useState<number | null>(null);
   const [timerActive, setTimerActive] = useState(false);
   const [totalDuration, setTotalDuration] = useState<number | null>(null);
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
-  const hasEndedRef = useRef(false);
-  const appStateRef = useRef<AppStateStatus>(AppState.currentState);
+  const [overtime, setOvertime] = useState<number>(0);
+  const [isOvertime, setIsOvertime] = useState(false);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const hasCalledOnEnd = useRef(false);
 
   const clearTimerInterval = useCallback(() => {
     if (intervalRef.current) {
@@ -28,145 +18,111 @@ export const useTimer = (onTimerEnd?: () => void) => {
     }
   }, []);
 
-  // Recalculate remaining time from stored endTime
-  const syncTimerWithStorage = useCallback(async () => {
-    const stored = await storage.get(STORAGE_KEYS.TIMER_END);
-    if (stored) {
-      const timerState: TimerState = JSON.parse(stored);
-      const remaining = Math.max(
-        0,
-        Math.floor((timerState.endTime! - Date.now()) / 1000),
-      );
-
-      if (remaining > 0) {
-        setRemainingTime(remaining);
-        setTotalDuration(timerState.totalDuration);
-        setTimerActive(true);
-        hasEndedRef.current = false;
-      } else {
-        // Timer ended while in background
-        await storage.remove(STORAGE_KEYS.TIMER_END);
-        setTimerActive(false);
-        setRemainingTime(0);
-        
-        if (!hasEndedRef.current) {
-          hasEndedRef.current = true;
-          onTimerEnd?.();
-        }
-      }
-    }
-  }, [onTimerEnd]);
-
-  const loadTimer = useCallback(async () => {
-    const stored = await storage.get(STORAGE_KEYS.TIMER_END);
-    if (stored) {
-      const timerState: TimerState = JSON.parse(stored);
-      const remaining = Math.max(
-        0,
-        Math.floor((timerState.endTime! - Date.now()) / 1000),
-      );
-
-      if (remaining > 0) {
-        setRemainingTime(remaining);
-        setTotalDuration(timerState.totalDuration);
-        setTimerActive(true);
-        hasEndedRef.current = false;
-      } else {
-        await storage.remove(STORAGE_KEYS.TIMER_END);
-        setTimerActive(false);
-        setRemainingTime(0);
-      }
-    }
-  }, []);
-
-  useEffect(() => {
-    loadTimer();
-  }, [loadTimer]);
-
-  // Handle app state changes (background/foreground)
-  useEffect(() => {
-    const handleAppStateChange = (nextAppState: AppStateStatus) => {
-      // App came to foreground from background
-      if (
-        appStateRef.current.match(/inactive|background/) &&
-        nextAppState === 'active'
-      ) {
-        // Recalculate timer based on stored endTime
-        syncTimerWithStorage();
-      }
-      appStateRef.current = nextAppState;
-    };
-
-    const subscription = AppState.addEventListener('change', handleAppStateChange);
-
-    return () => {
-      subscription.remove();
-    };
-  }, [syncTimerWithStorage]);
-
-  useEffect(() => {
-    if (timerActive && remainingTime > 0) {
-      intervalRef.current = setInterval(() => {
-        setRemainingTime(prev => {
-          const newTime = prev - 1;
-          if (newTime <= 0) {
-            clearTimerInterval();
-            setTimerActive(false);
-
-            if (!hasEndedRef.current) {
-              hasEndedRef.current = true;
-              showTimerEndNotification();
-              onTimerEnd?.();
-              storage.remove(STORAGE_KEYS.TIMER_END);
-            }
-            return 0;
-          }
-          return newTime;
-        });
-      }, 1000);
-
-      return clearTimerInterval;
-    }
-  }, [timerActive, clearTimerInterval, onTimerEnd]);
-
-  const startTimer = useCallback(async (minutes: number): Promise<void> => {
-    const durationInSeconds = minutes * 60;
-    const endTime = Date.now() + durationInSeconds * 1000;
-
-    const timerState: TimerState = {
-      endTime,
-      totalDuration: durationInSeconds,
-    };
-
-    await storage.set(STORAGE_KEYS.TIMER_END, JSON.stringify(timerState));
-    await scheduleTimerNotification(minutes);
-
-    setRemainingTime(durationInSeconds);
-    setTotalDuration(durationInSeconds);
-    setTimerActive(true);
-    hasEndedRef.current = false;
-  }, []);
-
-  const stopTimer = useCallback(async (): Promise<void> => {
+  const stopTimer = useCallback(async () => {
     clearTimerInterval();
-    await storage.remove(STORAGE_KEYS.TIMER_END);
-    await cancelTimerNotification();
     setTimerActive(false);
-    setRemainingTime(0);
+    setRemainingTime(null);
     setTotalDuration(null);
-    hasEndedRef.current = false;
+    setOvertime(0);
+    setIsOvertime(false);
+    hasCalledOnEnd.current = false;
+    await AsyncStorage.removeItem(STORAGE_KEYS.TIMER_END);
+    await AsyncStorage.removeItem(STORAGE_KEYS.TIMER_DURATION);
   }, [clearTimerInterval]);
 
-  // Get elapsed time (how long the user worked)
+  const startTimer = useCallback(async (minutes: number) => {
+    const durationSeconds = minutes * 60;
+    const endTime = Date.now() + durationSeconds * 1000;
+
+    await AsyncStorage.setItem(STORAGE_KEYS.TIMER_END, endTime.toString());
+    await AsyncStorage.setItem(
+      STORAGE_KEYS.TIMER_DURATION,
+      durationSeconds.toString(),
+    );
+
+    setTotalDuration(durationSeconds);
+    setRemainingTime(durationSeconds);
+    setTimerActive(true);
+    setOvertime(0);
+    setIsOvertime(false);
+    hasCalledOnEnd.current = false;
+  }, []);
+
   const getElapsedTime = useCallback((): number | null => {
     if (totalDuration === null) return null;
+    if (isOvertime) {
+      return totalDuration + overtime;
+    }
+    if (remainingTime === null) return null;
     return totalDuration - remainingTime;
-  }, [totalDuration, remainingTime]);
+  }, [totalDuration, remainingTime, isOvertime, overtime]);
+
+  useEffect(() => {
+    const loadTimer = async () => {
+      const endTimeStr = await AsyncStorage.getItem(STORAGE_KEYS.TIMER_END);
+      const durationStr = await AsyncStorage.getItem(
+        STORAGE_KEYS.TIMER_DURATION,
+      );
+
+      if (endTimeStr && durationStr) {
+        const endTime = parseInt(endTimeStr, 10);
+        const duration = parseInt(durationStr, 10);
+        const now = Date.now();
+        const remaining = Math.floor((endTime - now) / 1000);
+
+        setTotalDuration(duration);
+
+        if (remaining > 0) {
+          setRemainingTime(remaining);
+          setTimerActive(true);
+        } else {
+          // Timer has expired, calculate overtime
+          const overtimeSeconds = Math.abs(remaining);
+          setRemainingTime(0);
+          setOvertime(overtimeSeconds);
+          setIsOvertime(true);
+          setTimerActive(true);
+        }
+      }
+    };
+    loadTimer();
+  }, []);
+
+  useEffect(() => {
+    if (!timerActive) {
+      clearTimerInterval();
+      return;
+    }
+
+    intervalRef.current = setInterval(() => {
+      if (isOvertime) {
+        // Count up overtime
+        setOvertime(prev => prev + 1);
+      } else if (remainingTime !== null) {
+        if (remainingTime <= 1) {
+          // Timer just expired, switch to overtime mode
+          setRemainingTime(0);
+          setIsOvertime(true);
+          setOvertime(0);
+          if (!hasCalledOnEnd.current && onTimerEnd) {
+            hasCalledOnEnd.current = true;
+            onTimerEnd();
+          }
+        } else {
+          setRemainingTime(prev => (prev !== null ? prev - 1 : null));
+        }
+      }
+    }, 1000);
+
+    return () => clearTimerInterval();
+  }, [timerActive, remainingTime, isOvertime, onTimerEnd, clearTimerInterval]);
 
   return {
     remainingTime,
     timerActive,
     totalDuration,
+    overtime,
+    isOvertime,
     startTimer,
     stopTimer,
     getElapsedTime,
