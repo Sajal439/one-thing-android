@@ -32,6 +32,7 @@ const App = () => {
   const [showTimerPicker, setShowTimerPicker] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const [earnedPoints, setEarnedPoints] = useState(0);
+  const [completionOvertime, setCompletionOvertime] = useState(0);
 
   const timerStartTime = useRef<number | null>(null);
 
@@ -42,7 +43,8 @@ const App = () => {
   const { task, input, setInput, saveTask, clearTask } = useTask();
   const { streak, incrementStreak } = useStreak();
   const { points, addPoints } = usePoints();
-  const { history, addToHistory, deleteFromHistory, clearHistory } = useHistory();
+  const { history, addToHistory, deleteFromHistory, clearHistory } =
+    useHistory();
   const {
     scaleAnim,
     shakeAnim,
@@ -52,13 +54,23 @@ const App = () => {
   } = useAnimations();
 
   const handleTimerEnd = useCallback(() => {
-    setModalType('failed');
-    setShowModal(true);
+    // Just play the fail animation to alert user, but don't show modal
+    // Timer will continue counting overtime
     playFailAnimation();
   }, [playFailAnimation]);
 
-  const { remainingTime, timerActive, totalDuration, startTimer, stopTimer, getElapsedTime } =
-    useTimer(handleTimerEnd);
+  const {
+    remainingTime,
+    timerActive,
+    totalDuration,
+    overtime,
+    isOvertime,
+    isStopwatch,
+    startTimer,
+    startStopwatch,
+    stopTimer,
+    getElapsedTime,
+  } = useTimer(handleTimerEnd);
 
   useEffect(() => {
     initNotifications();
@@ -81,8 +93,9 @@ const App = () => {
     setTimerMinutes('');
   };
 
-  const handleSkipTimer = () => {
-    timerStartTime.current = null;
+  const handleSkipTimer = async () => {
+    timerStartTime.current = Date.now();
+    await startStopwatch();
     setShowTimerPicker(false);
     setTimerMinutes('');
   };
@@ -91,14 +104,18 @@ const App = () => {
     const currentTask = task;
     await incrementStreak();
 
-    const earned = calculatePoints(streak, timerActive, remainingTime);
+    const hadTimer = totalDuration !== null;
+    const earned = calculatePoints(streak, hadTimer, remainingTime ?? 0);
     setEarnedPoints(earned);
     await addPoints(earned);
+
+    // Store overtime for the modal
+    setCompletionOvertime(isOvertime ? overtime : 0);
 
     // Calculate duration - use elapsed time from timer or null if no timer
     let duration: number | null = null;
     if (timerStartTime.current) {
-      // If timer was used, calculate elapsed time
+      // If timer was used, calculate elapsed time (includes overtime)
       duration = Math.floor((Date.now() - timerStartTime.current) / 1000);
     } else if (totalDuration !== null) {
       // Fallback: use getElapsedTime if available
@@ -114,13 +131,16 @@ const App = () => {
     await stopTimer();
     await clearTask();
 
-    setModalType('success');
+    // Show success modal (even if overtime - task is still completed)
+    setModalType(isOvertime ? 'overtime' : 'success');
     setShowModal(true);
     playSuccessAnimation();
   };
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
+    <SafeAreaView
+      style={[styles.container, { backgroundColor: theme.background }]}
+    >
       <StatusBar
         barStyle={scheme === 'dark' ? 'light-content' : 'dark-content'}
         backgroundColor={theme.background}
@@ -143,6 +163,9 @@ const App = () => {
         onSubmit={handleSaveTask}
         timerActive={timerActive}
         remainingTime={remainingTime}
+        overtime={overtime}
+        isOvertime={isOvertime}
+        isStopwatch={isStopwatch}
         shakeAnim={shakeAnim}
       />
 
@@ -168,6 +191,7 @@ const App = () => {
         theme={theme}
         type={modalType}
         pointsEarned={earnedPoints}
+        overtime={completionOvertime}
         onClose={() => setShowModal(false)}
       />
 

@@ -10,7 +10,10 @@ interface TaskContentProps {
   onInputChange: (text: string) => void;
   onSubmit: () => void;
   timerActive: boolean;
-  remainingTime: number;
+  remainingTime: number | null;
+  overtime: number;
+  isOvertime: boolean;
+  isStopwatch: boolean;
   shakeAnim: Animated.Value;
 }
 
@@ -22,6 +25,9 @@ export const TaskContent: React.FC<TaskContentProps> = ({
   // onSubmit,
   timerActive,
   remainingTime,
+  overtime,
+  isOvertime,
+  isStopwatch,
   shakeAnim,
 }) => {
   const shakeInterpolate = shakeAnim.interpolate({
@@ -30,18 +36,32 @@ export const TaskContent: React.FC<TaskContentProps> = ({
   });
 
   const getTimerColor = () => {
-    if (remainingTime <= 60) return theme.danger;
-    if (remainingTime <= 300) return theme.warning;
+    if (isStopwatch) return theme.primary;
+    if (isOvertime) return theme.danger;
+    if (remainingTime !== null && remainingTime <= 60) return theme.danger;
+    if (remainingTime !== null && remainingTime <= 300) return theme.warning;
     return theme.primary;
   };
 
   const getTimerBgColor = () => {
-    if (remainingTime <= 60) return theme.dangerLight;
-    if (remainingTime <= 300) return theme.warningLight;
+    if (isStopwatch) return theme.primaryLight;
+    if (isOvertime) return theme.dangerLight;
+    if (remainingTime !== null && remainingTime <= 60) return theme.dangerLight;
+    if (remainingTime !== null && remainingTime <= 300)
+      return theme.warningLight;
     return theme.primaryLight;
   };
 
-  const progress = timerActive ? remainingTime / (remainingTime + 1) : 1;
+  const displayTime = isStopwatch
+    ? overtime
+    : isOvertime
+      ? overtime
+      : (remainingTime ?? 0);
+
+  const progress =
+    timerActive && !isOvertime && !isStopwatch && remainingTime !== null
+      ? remainingTime / (remainingTime + 1)
+      : 0;
 
   if (task) {
     return (
@@ -58,25 +78,32 @@ export const TaskContent: React.FC<TaskContentProps> = ({
           >
             <View style={styles.timerHeader}>
               <Text style={[styles.timerLabel, { color: getTimerColor() }]}>
-                ⏱ Time Remaining
+                {isStopwatch
+                  ? '⏱ Stopwatch'
+                  : isOvertime
+                    ? '⚠️ Overtime'
+                    : '⏱ Time Remaining'}
               </Text>
             </View>
             <Text style={[styles.timerValue, { color: getTimerColor() }]}>
-              {formatTime(remainingTime)}
+              {isOvertime ? '+' : ''}
+              {formatTime(displayTime)}
             </Text>
-            <View
-              style={[styles.progressBar, { backgroundColor: theme.border }]}
-            >
+            {!isStopwatch && (
               <View
-                style={[
-                  styles.progressFill,
-                  {
-                    backgroundColor: getTimerColor(),
-                    width: `${progress * 100}%`,
-                  },
-                ]}
-              />
-            </View>
+                style={[styles.progressBar, { backgroundColor: theme.border }]}
+              >
+                <View
+                  style={[
+                    styles.progressFill,
+                    {
+                      backgroundColor: getTimerColor(),
+                      width: `${progress * 100}%`,
+                    },
+                  ]}
+                />
+              </View>
+            )}
           </Animated.View>
         )}
 

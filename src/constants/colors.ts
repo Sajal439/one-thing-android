@@ -1,58 +1,75 @@
-export const colors = {
+export interface Theme {
+  background: string;
+  cardBg: string;
+  timerBg: string;
+  text: string;
+  subText: string;
+  placeholder: string;
+  primary: string;
+  primaryLight: string;
+  secondary: string;
+  success: string;
+  successLight: string;
+  danger: string;
+  dangerLight: string;
+  warning: string;
+  warningLight: string;
+  border: string;
+  overlay: string;
+  modalBg: string;
+  pointsBg: string;
+  pointsText: string;
+  streakBg: string;
+  streakText: string;
+}
+
+export const colors: { light: Theme; dark: Theme } = {
   light: {
-    background: '#F8FAFC',
+    background: '#F8F9FA',
     cardBg: '#FFFFFF',
-    timerBg: '#F1F5F9',
-    text: '#0F172A',
-    subText: '#64748B',
-    placeholder: '#94A3B8',
+    timerBg: '#F0F4F8',
+    text: '#1A1A2E',
+    subText: '#6B7280',
+    placeholder: '#9CA3AF',
     primary: '#6366F1',
     primaryLight: '#E0E7FF',
     secondary: '#8B5CF6',
     success: '#10B981',
     successLight: '#D1FAE5',
-    warning: '#F59E0B',
-    warningLight: '#FEF3C7',
     danger: '#EF4444',
     dangerLight: '#FEE2E2',
-    accent: '#EC4899',
-    border: '#E2E8F0',
-    overlay: 'rgba(15, 23, 42, 0.6)',
+    warning: '#F59E0B',
+    warningLight: '#FEF3C7',
+    border: '#E5E7EB',
+    overlay: 'rgba(0, 0, 0, 0.5)',
     modalBg: '#FFFFFF',
-    gradient1: '#6366F1',
-    gradient2: '#8B5CF6',
-    streakBg: '#FEF3C7',
-    streakText: '#D97706',
-    pointsBg: '#D1FAE5',
-    pointsText: '#059669',
+    pointsBg: '#FEF3C7',
+    pointsText: '#92400E',
+    streakBg: '#E0E7FF',
+    streakText: '#312E81',
   },
   dark: {
-    background: '#0F172A',
-    cardBg: '#1E293B',
-    timerBg: '#334155',
-    text: '#F8FAFC',
-    subText: '#94A3B8',
-    placeholder: '#64748B',
+    background: '#0F0F1A',
+    cardBg: '#1A1A2E',
+    timerBg: '#252540',
+    text: '#FFFFFF',
+    subText: '#9CA3AF',
+    placeholder: '#6B7280',
     primary: '#818CF8',
     primaryLight: '#312E81',
     secondary: '#A78BFA',
     success: '#34D399',
     successLight: '#064E3B',
-    warning: '#FBBF24',
-    warningLight: '#78350F',
     danger: '#F87171',
     dangerLight: '#7F1D1D',
-    accent: '#F472B6',
-    border: '#334155',
-    overlay: 'rgba(0, 0, 0, 0.8)',
-    modalBg: '#1E293B',
-    gradient1: '#818CF8',
-    gradient2: '#A78BFA',
-    streakBg: '#78350F',
-    streakText: '#FBBF24',
-    pointsBg: '#064E3B',
-    pointsText: '#34D399',
+    warning: '#FBBF24',
+    warningLight: '#78350F',
+    border: '#374151',
+    overlay: 'rgba(0, 0, 0, 0.7)',
+    modalBg: '#1A1A2E',
+    pointsBg: '#78350F',
+    pointsText: '#FDE68A',
+    streakBg: '#312E81',
+    streakText: '#E0E7FF',
   },
 };
-
-export type Theme = (typeof colors)['light'];
